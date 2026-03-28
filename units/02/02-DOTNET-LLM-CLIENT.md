@@ -192,10 +192,13 @@ By the end of this unit, you will:
    dotnet run -- generate-checklist --topic "Network troubleshooting" --output ./ai-lab/out/checklist.md
    ```
 
-2. Add `--help` support
-3. Add error handling and validation
+2. Add `--help` support — running `dotnet run -- --help` should print available commands and their flags. The `System.CommandLine` package handles this automatically once commands are wired up correctly.
 
-**Deliverable:** All 3 commands work, generate valid Markdown
+3. Add basic error handling — at minimum:
+   - If `--input` file does not exist, print a clear error message and exit
+   - If Ollama is not reachable, catch the exception and tell the user rather than crashing
+
+**Deliverable:** Run each command with a real input and confirm a `.md` file is created in `out/` with a metadata header and the LLM response body
 
 ---
 
