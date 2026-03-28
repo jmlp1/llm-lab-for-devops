@@ -171,6 +171,8 @@ By the end of this unit, you will:
 - Implement 3 main commands
 - Add help/documentation
 
+> All `dotnet` commands in this section must be run from the `ops-llm-client/` project root.
+
 **Tasks:**
 1. Implement 3 commands in `Program.cs`:
    > **Exercise:** implement this yourself — the expected commands and their flags are shown below, but the implementation is yours.
