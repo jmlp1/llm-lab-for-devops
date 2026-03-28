@@ -92,7 +92,7 @@ By the end of this unit, you will:
 - Inject variables into prompts
 
 **Tasks:**
-1. Create `OllamaClient.cs`:
+1. Create `src/OllamaClient.cs`:
    - Constructor: takes base URL and model name
    - Method: `async Task<string> GenerateAsync(string prompt)`
    - Handle retries and timeouts
@@ -119,7 +119,7 @@ By the end of this unit, you will:
    }
    ```
 
-2. Create `PromptEngine.cs`:
+2. Create `src/PromptEngine.cs`:
    - Load prompt from `prompts/*.md`
    - Replace placeholders: `{{INPUT}}`, `{{DATE}}`, `{{CONTEXT}}`
    - Example:
@@ -142,7 +142,7 @@ By the end of this unit, you will:
    }
    ```
 
-3. Create `ReportGenerator.cs`:
+3. Create `src/ReportGenerator.cs`:
    - Format output as Markdown
    - Add metadata (timestamp, model, input file)
    - Save to `out/*.md`
