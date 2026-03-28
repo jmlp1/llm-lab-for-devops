@@ -383,6 +383,13 @@ Open each file and verify it contains a metadata header and a structured LLM res
 > - **CPU only (including Intel integrated/Iris):** 3–10 minutes
 >
 > Ollama does not support Intel integrated graphics — if you have Intel Iris or similar, it will run on CPU. This is normal. If you hit a timeout error, increase the timeout in `OllamaClient.cs` to `TimeSpan.FromMinutes(10)` or higher.
+>
+> **Faster alternative for CPU-only machines:** swap to a smaller model in `appsettings.json`:
+> ```json
+> "Model": "phi3:mini"
+> ```
+> Then pull it: `ollama pull phi3:mini`
+> `phi3:mini` and `tinyllama` are significantly faster on CPU with acceptable output quality for learning purposes.
 
 **Deliverable:** 3 `.md` files in `out/`, each with a metadata header and LLM response body.
 
