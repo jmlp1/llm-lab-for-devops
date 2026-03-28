@@ -77,9 +77,15 @@ By the end of this unit, you will:
      "Ollama": {
        "BaseUrl": "http://localhost:11434",
        "Model": "llama3.1:8b"
+     },
+     "Paths": {
+       "PromptsDir": "./prompts",
+       "SamplesDir": "./samples",
+       "OutputDir": "./out"
      }
    }
    ```
+   > Paths are relative to wherever you run `dotnet run` from — keep them relative so the tool works on any machine without hardcoding full paths. Think of this like `values.yaml` in Helm — defaults live here, and the CLI flags (`--input`, `--output`) override them at runtime.
 
 **Deliverable:** Project structure set up, compiles without errors
 
@@ -179,17 +185,17 @@ By the end of this unit, you will:
 
    **Command 1: summarize-log**
    ```powershell
-   dotnet run -- summarize-log --input ./ai-lab/samples/errors.log --output ./ai-lab/out/summary.md
+   dotnet run -- summarize-log --input ./samples/sample-errors.log --output ./out/summary.md
    ```
 
    **Command 2: draft-runbook-steps**
    ```powershell
-   dotnet run -- draft-runbook-steps --incident "Database connection failure" --output ./ai-lab/out/runbook.md
+   dotnet run -- draft-runbook-steps --incident "Database connection failure" --output ./out/runbook.md
    ```
 
    **Command 3: generate-checklist**
    ```powershell
-   dotnet run -- generate-checklist --topic "Network troubleshooting" --output ./ai-lab/out/checklist.md
+   dotnet run -- generate-checklist --topic "Network troubleshooting" --output ./out/checklist.md
    ```
 
 2. Add `--help` support — running `dotnet run -- --help` should print available commands and their flags. The `System.CommandLine` package handles this automatically once commands are wired up correctly.
