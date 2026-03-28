@@ -71,7 +71,7 @@ By the end of this unit, you will:
    └── out/           (generated reports — starts empty)
    ```
 
-4. Create `.env` or `appsettings.json`:
+4. Create `appsettings.json` in the project root (`ops-llm-client/appsettings.json`):
    ```json
    {
      "Ollama": {
