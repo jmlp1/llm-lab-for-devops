@@ -58,7 +58,7 @@ By the end of this unit, you will:
    > `Microsoft.Extensions.Configuration.Json` is required for `ConfigurationBuilder` to load `appsettings.json`.
    > `System.CommandLine` provides the `--input`/`--output` flag parsing used in Day 4.
 
-3. Create folder structure — **folders only**, files get created as you work through each day:
+3. Create the `ops-llm-client` folder structure — **folders only**, files get created as you work through each day:
    ```powershell
    mkdir src, prompts, samples, out
    ```
