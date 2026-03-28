@@ -4,6 +4,8 @@ A hands-on learning path for DevOps and SysAdmin engineers who want to understan
 
 Everything runs locally on your own machine.
 
+> **Work in progress:** This guide is actively maintained and updated as real learners work through it — fixes, clarifications, and improvements are added as gaps are found. If something doesn't work or isn't clear, open an issue.
+
 ---
 
 ## Who This Is For
