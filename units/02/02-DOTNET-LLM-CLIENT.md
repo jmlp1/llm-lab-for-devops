@@ -139,8 +139,9 @@ Before writing code, understand what each piece does:
 
        public OllamaClient(string baseUrl, string model)
        {
-           // Timeout set to 5 minutes — LLMs can be slow, especially on CPU
-           _httpClient = new HttpClient { BaseAddress = new Uri(baseUrl), Timeout = TimeSpan.FromMinutes(5) };
+           // Timeout set to 10 minutes — LLMs can be slow on CPU-only machines (no dedicated GPU)
+           // If you have an NVIDIA or AMD GPU, Ollama will use it automatically and responses will be faster
+           _httpClient = new HttpClient { BaseAddress = new Uri(baseUrl), Timeout = TimeSpan.FromMinutes(10) };
            _model = model;
        }
 
@@ -377,7 +378,11 @@ ls ./out/
 
 Open each file and verify it contains a metadata header and a structured LLM response.
 
-> **Note:** Each command sends a prompt to your local Ollama instance. Response time depends on your hardware — expect 1–3 minutes per command on CPU, faster with a GPU.
+> **Note:** Each command sends a prompt to your local Ollama instance. Response time depends on your hardware:
+> - **Dedicated GPU (NVIDIA/AMD):** 10–30 seconds
+> - **CPU only (including Intel integrated/Iris):** 3–10 minutes
+>
+> Ollama does not support Intel integrated graphics — if you have Intel Iris or similar, it will run on CPU. This is normal. If you hit a timeout error, increase the timeout in `OllamaClient.cs` to `TimeSpan.FromMinutes(10)` or higher.
 
 **Deliverable:** 3 `.md` files in `out/`, each with a metadata header and LLM response body.
 
@@ -422,7 +427,7 @@ Open each file and verify it contains a metadata header and a structured LLM res
 |-------|----------|
 | `appsettings.json` not found | Check `ops-llm-client.csproj` has `CopyToOutputDirectory` set for `appsettings.json` |
 | Prompts not found | Run `Copy-Item ..\ai-lab\prompts\* .\prompts\` from the project root |
-| Timeout after 100 seconds | Check `OllamaClient.cs` has `Timeout = TimeSpan.FromMinutes(5)` |
+| Timeout error | Increase timeout in `OllamaClient.cs` — set `Timeout = TimeSpan.FromMinutes(10)`. On CPU-only machines (Intel Iris etc.) responses can take 5–10 minutes |
 | No versions available (NuGet) | Run `dotnet nuget add source https://api.nuget.org/v3/index.json -n nuget.org` |
 | Cannot connect to Ollama | Verify Ollama is running: `curl http://localhost:11434/api/tags` |
 | Output file not created | Check the `out/` folder exists in the project root |
