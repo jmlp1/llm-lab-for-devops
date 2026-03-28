@@ -171,40 +171,76 @@ By the end of this unit, you will:
 
 ---
 
-### Day 4: Implement CLI Commands
+### Day 4: Wire Up Program.cs
 **Objectives:**
-- Create command interface
-- Implement 3 main commands
-- Add help/documentation
+- Understand what `Program.cs` does and how it connects everything
+- Write the code that reads CLI flags and calls your other classes
+- Test each command end-to-end
 
-> All `dotnet` commands in this section must be run from the `ops-llm-client/` project root.
+> All `dotnet run` commands must be run from the `ops-llm-client/` project root.
+
+#### What is Program.cs?
+
+`Program.cs` is the **entry point** of the application — it is the first thing that runs when you type `dotnet run`. Right now it just prints "Hello, World!" because that is the default template.
+
+Your job is to replace that with code that:
+1. Reads the command name and flags the user passed in (e.g. `summarize-log --input ./samples/sample-errors.log`)
+2. Loads the right prompt template using `PromptEngine`
+3. Injects the input into the prompt
+4. Sends it to Ollama using `OllamaClient`
+5. Saves the result to a file using `ReportGenerator`
+
+Think of it as the **orchestrator** — it does not do any of the work itself, it just calls the classes you already built in the right order.
+
+#### How System.CommandLine works
+
+The `System.CommandLine` package lets you define named commands and flags in code. Here is the pattern for one command:
+
+```csharp
+var inputOption = new Option<string>("--input", "Path to the input log file");
+var outputOption = new Option<string>("--output", "Path to save the report");
+
+var summarizeCommand = new Command("summarize-log", "Summarize an error log");
+summarizeCommand.AddOption(inputOption);
+summarizeCommand.AddOption(outputOption);
+
+summarizeCommand.SetHandler(async (input, output) =>
+{
+    // your code here — load prompt, call Ollama, save report
+}, inputOption, outputOption);
+
+var rootCommand = new RootCommand("ops-llm-client — LLM tools for DevOps");
+rootCommand.AddCommand(summarizeCommand);
+
+await rootCommand.InvokeAsync(args);
+```
+
+`--help` is built in automatically once commands are defined — no extra work needed.
 
 **Tasks:**
-1. Implement 3 commands in `Program.cs`:
-   > **Exercise:** implement this yourself — the expected commands and their flags are shown below, but the implementation is yours.
+1. Open `Program.cs` and replace the "Hello, World!" line with the `System.CommandLine` wiring above
+2. Implement all 3 commands following the same pattern:
 
-   **Command 1: summarize-log**
+   **Command 1: summarize-log** — reads a log file, uses `01-log-summary.md` prompt
    ```powershell
    dotnet run -- summarize-log --input ./samples/sample-errors.log --output ./out/summary.md
    ```
 
-   **Command 2: draft-runbook-steps**
+   **Command 2: draft-runbook-steps** — takes an incident description, uses `02-incident-timeline.md` prompt
    ```powershell
    dotnet run -- draft-runbook-steps --incident "Database connection failure" --output ./out/runbook.md
    ```
 
-   **Command 3: generate-checklist**
+   **Command 3: generate-checklist** — takes a topic, uses `03-troubleshooting-checklist.md` prompt
    ```powershell
    dotnet run -- generate-checklist --topic "Network troubleshooting" --output ./out/checklist.md
    ```
 
-2. Add `--help` support — running `dotnet run -- --help` should print available commands and their flags. The `System.CommandLine` package handles this automatically once commands are wired up correctly.
+3. Add basic error handling inside each command handler:
+   - If `--input` file does not exist, print a clear message and exit
+   - If Ollama is not reachable, catch the exception and print a useful error instead of crashing
 
-3. Add basic error handling — at minimum:
-   - If `--input` file does not exist, print a clear error message and exit
-   - If Ollama is not reachable, catch the exception and tell the user rather than crashing
-
-**Deliverable:** Run each command with a real input and confirm a `.md` file is created in `out/` with a metadata header and the LLM response body
+**Deliverable:** Run each `dotnet run` command above and confirm a `.md` file appears in `out/` containing a metadata header and the LLM response
 
 ---
 
