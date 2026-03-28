@@ -127,6 +127,9 @@ By the end of this unit, you will:
    - Replace placeholders: `{{INPUT}}`, `{{DATE}}`, `{{CONTEXT}}`
    - Example:
    ```csharp
+   using System.Collections.Generic;
+   using System.IO;
+
    public class PromptEngine
    {
        public string LoadPrompt(string filePath)
