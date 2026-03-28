@@ -97,6 +97,9 @@ By the end of this unit, you will:
    - Method: `async Task<string> GenerateAsync(string prompt)`
    - Handle retries and timeouts
    ```csharp
+   using System.Net.Http.Json;
+   using System.Text.Json;
+
    public class OllamaClient
    {
        private readonly HttpClient _httpClient;
