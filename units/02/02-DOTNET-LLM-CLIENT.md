@@ -149,6 +149,7 @@ By the end of this unit, you will:
    ```
 
 3. Create `src/ReportGenerator.cs`:
+   > **Exercise:** implement this yourself — no code provided.
    - Format output as Markdown
    - Add metadata (timestamp, model, input file)
    - Save to `out/*.md`
@@ -165,6 +166,7 @@ By the end of this unit, you will:
 
 **Tasks:**
 1. Implement 3 commands in `Program.cs`:
+   > **Exercise:** implement this yourself — the expected commands and their flags are shown below, but the implementation is yours.
 
    **Command 1: summarize-log**
    ```powershell
@@ -196,6 +198,7 @@ By the end of this unit, you will:
 
 **Tasks:**
 1. Create `README.md`:
+   > **Exercise:** write this yourself — document what you built in your own words.
    - Overview of the tool
    - Installation steps
    - 3 example commands with sample output
