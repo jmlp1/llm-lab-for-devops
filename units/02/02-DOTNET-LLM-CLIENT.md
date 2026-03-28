@@ -154,6 +154,13 @@ By the end of this unit, you will:
    - Add metadata (timestamp, model, input file)
    - Save to `out/*.md`
 
+   **Hints:**
+   - You need a public method that accepts the LLM output, the model name, and the input filename as parameters
+   - Use `DateTime.Now` for the timestamp
+   - Build the Markdown string first, then write it to a file — look at how `PromptEngine` uses `File.ReadAllText`, you need the write equivalent
+   - Generate the output filename dynamically so each run produces a new file (e.g. include the timestamp in the name)
+   - The `Code Example` section at the bottom of this guide shows how `ReportGenerator` is called — use that as a clue for what your method signature should look like
+
 **Deliverable:** OllamaClient works, prompts load, variables inject correctly
 
 ---
