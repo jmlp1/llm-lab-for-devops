@@ -9,9 +9,9 @@
 ## Learning Objectives
 
 By the end of this unit, you will:
-- [ ] Install and configure Ollama on Windows 11
-- [ ] Pull and run a local LLM model (`llama3.1:8b` or similar)
-- [ ] Create reusable prompt templates for DevOps tasks
+- [x] Install and configure Ollama on Windows 11
+- [x] Pull and run a local LLM model (`llama3.1:8b` or similar)
+- [x] Create reusable prompt templates for DevOps tasks
 - [ ] Generate baseline outputs: log summaries, incident timelines, troubleshooting checklists
 - [ ] Document your setup and processes
 
@@ -56,26 +56,19 @@ By the end of this unit, you will:
 - Establish response style guide
 
 **Tasks:**
-1. Create `./ai-lab/prompts/00-style.md`:
-   - Response style: headings + bullets, **no paragraphs**
-   - Always ask clarifying questions when input is missing
-   - Use structured formats: JSON, tables, checklists
-   - Example:
-     ```markdown
-     # Log Summary
-     - **Critical Events:** 3
-     - **Warnings:** 12
-     - **Root Cause:** Disk full at 14:32
-     
-     ## Next Steps
-     1. Clear temp files
-     2. Monitor disk usage
-     ```
+1. Review `./ai-lab/prompts/00-style.md` — this file is already in the repo and defines the response style used across all prompts:
+   - Headings + bullets, **no paragraphs**
+   - Ask clarifying questions when input is missing
+   - Structured formats: JSON, tables, checklists
 
-2. Create 3 prompt templates in `./ai-lab/prompts/`:
-   - `01-log-summary.md` — summarize error logs
-   - `02-incident-timeline.md` — create incident timeline from logs
-   - `03-troubleshooting-checklist.md` — generate diagnostic checklist
+   Feel free to adjust it to suit your preferences — it is guidance, not a fixed rule.
+
+2. Review the 3 prompt templates already provided in `./ai-lab/prompts/`:
+   - `01-log-summary.md` — summarizes error logs
+   - `02-incident-timeline.md` — builds an incident timeline from logs
+   - `03-troubleshooting-checklist.md` — generates a diagnostic checklist
+
+   Read through each one, understand what it does, and modify or improve them as you see fit. They are starting points, not final answers.
 
 3. **Smoke Test** each prompt using the steps below.
 
@@ -233,15 +226,15 @@ Write-Host "Saved to ./ai-lab/out/03-output.txt"
 
 ## Deliverables Checklist
 
-- [ ] Ollama installed and verified
-- [ ] Llama model pulled
-- [ ] `./ai-lab/ai-lab.md` — setup and usage guide
-- [ ] `./ai-lab/prompts/00-style.md` — style guide
-- [ ] `./ai-lab/prompts/01-log-summary.md` — prompt template
-- [ ] `./ai-lab/prompts/02-incident-timeline.md` — prompt template
-- [ ] `./ai-lab/prompts/03-troubleshooting-checklist.md` — prompt template
-- [ ] 3 sample outputs in `./ai-lab/out/` (one per prompt)
-- [ ] Test results documentation
+- [x] Ollama installed and verified
+- [x] Llama model pulled
+- [x] `./ai-lab/ai-lab.md` — setup and usage guide
+- [x] `./ai-lab/prompts/00-style.md` — style guide
+- [x] `./ai-lab/prompts/01-log-summary.md` — prompt template
+- [x] `./ai-lab/prompts/02-incident-timeline.md` — prompt template
+- [x] `./ai-lab/prompts/03-troubleshooting-checklist.md` — prompt template
+- [x] 3 sample outputs in `./ai-lab/out/` (one per prompt)
+- [x] Test results documentation
 
 ---
 
