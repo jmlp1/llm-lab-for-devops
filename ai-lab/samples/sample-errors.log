@@ -1,0 +1,15 @@
+[14:32:45] ERROR: Connection timeout to database server (attempt 1/3)
+[14:32:46] ERROR: Connection timeout to database server (attempt 2/3)
+[14:32:47] ERROR: Connection timeout to database server (attempt 3/3)
+[14:32:48] ERROR: Failed to initialize service - database connection unavailable
+[14:32:49] WARNING: Service startup failed, retrying in 5 seconds
+[14:33:15] ERROR: Connection pool exhausted - 500 active connections
+[14:33:16] ERROR: Request queued for 30 seconds waiting for connection
+[14:33:17] ERROR: HTTP 500 returned to client - Service unavailable
+[14:33:18] ERROR: HTTP 500 returned to client - Service unavailable
+[14:33:45] WARNING: Alert triggered - error rate exceeds 100/sec
+[14:35:22] INFO: Administrator restarted database connection service
+[14:35:23] INFO: Connection pool initialized with 100 connections
+[14:35:24] INFO: Service started successfully
+[14:35:25] INFO: Accepted first request post-restart
+[14:45:30] INFO: All services operational - incident resolved
