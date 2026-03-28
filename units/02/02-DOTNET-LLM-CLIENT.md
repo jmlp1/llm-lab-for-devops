@@ -42,6 +42,13 @@ By the end of this unit, you will:
    ```
 
 2. Add NuGet packages:
+
+   > **First-time setup:** If you get "no versions available" errors, your machine has no NuGet source configured. Add the official one first:
+   > ```powershell
+   > dotnet nuget add source https://api.nuget.org/v3/index.json -n nuget.org
+   > ```
+   > Then retry the commands below.
+
    ```powershell
    dotnet add package System.Net.Http.Json
    dotnet add package System.Text.Json
@@ -51,17 +58,17 @@ By the end of this unit, you will:
    > `Microsoft.Extensions.Configuration.Json` is required for `ConfigurationBuilder` to load `appsettings.json`.
    > `System.CommandLine` provides the `--input`/`--output` flag parsing used in Day 4.
 
-3. Create folder structure:
+3. Create folder structure — **folders only**, files get created as you work through each day:
+   ```powershell
+   mkdir src, prompts, samples, out
+   ```
+   Expected layout:
    ```
    ops-llm-client/
-   ├── src/
-   │   ├── Program.cs
-   │   ├── OllamaClient.cs
-   │   ├── PromptEngine.cs
-   │   └── ReportGenerator.cs
-   ├── prompts/       (copy from ./ai-lab/prompts)
-   ├── samples/       (test data)
-   └── out/           (generated reports)
+   ├── src/           (C# source files — created in Days 2–4)
+   ├── prompts/       (copy from ./ai-lab/prompts when ready)
+   ├── samples/       (test data — copy from ./ai-lab/samples)
+   └── out/           (generated reports — starts empty)
    ```
 
 4. Create `.env` or `appsettings.json`:
