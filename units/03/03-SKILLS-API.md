@@ -445,17 +445,20 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
 ### Day 5: Docker Deployment & Integration
 **Objectives:**
 - Containerize the API
-- Deploy on lab server or VM
-- Test from Unit 2 LLM client
+- Deploy on your Linux VM
+- Test from your Windows laptop
+
+> Each step is labelled **[Windows]** or **[VM]** so it's clear where to run it.
 
 **Tasks:**
-1. Create `Dockerfile`:
+
+1. **[Windows]** Create `Dockerfile` in the `skills-api/` folder:
    ```dockerfile
    FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
    WORKDIR /app
    COPY . .
    RUN dotnet publish -c Release -o out
-   
+
    FROM mcr.microsoft.com/dotnet/aspnet:8.0
    WORKDIR /app
    COPY --from=build /app/out .
@@ -463,29 +466,50 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    CMD ["dotnet", "skills-api.dll"]
    ```
 
-2. Build and deploy:
+2. **[Windows]** Push the code to GitHub so the VM can pull it:
    ```powershell
-   # On lab server or VM
+   git add skills-api/Dockerfile
+   git commit -m "Add Dockerfile"
+   git push
+   ```
+
+3. **[VM]** SSH into your VM, clone the repo and build the Docker image:
+   ```bash
+   git clone https://github.com/YOUR-USERNAME/AI_Learning.git
+   cd AI_Learning/skills-api
    docker build -t skills-api:latest .
+   ```
+
+4. **[VM]** Run the container, mounting `/var/log` so the API can read real Linux logs:
+   ```bash
    docker run -d -p 5000:5000 \
-     -v /var/log:/logs \
+     -v /var/log:/var/log:ro \
      -e ASPNETCORE_URLS=http://+:5000 \
      --name skills-api \
      skills-api:latest
    ```
-
-3. Test from laptop:
-   ```powershell
-   # Replace LAB-SERVER-IP with actual IP
-   curl -X GET "http://LAB-SERVER-IP:5000/api/system/info"
+   Verify it started:
+   ```bash
+   docker ps
+   docker logs skills-api
    ```
 
-4. Integrate with Unit 2 LLM client:
-   - Add method to OllamaClient to call skills endpoint
-   - Update prompts to reference skill calls
-   - Test end-to-end workflow
+5. **[Windows]** Test the VM's API from your laptop — replace `VM-IP` with your VM's actual IP:
+   ```powershell
+   curl "http://VM-IP:5000/api/system/info"
+   curl "http://VM-IP:5000/api/system/disk"
+   curl "http://VM-IP:5000/api/services/status?name=docker"
+   ```
+   The responses should show the **VM's** OS, disk, and service info — not your laptop's.
 
-**Deliverable:** Docker container running, API accessible from network, integration tested
+6. **[Windows]** Update `appsettings.json` to point the test script at the VM:
+   ```json
+   "skillsApi": {
+     "baseUrl": "http://VM-IP:5000"
+   }
+   ```
+
+**Deliverable:** `docker ps` shows the container running on the VM, curl from Windows returns the VM's system info
 
 ---
 
