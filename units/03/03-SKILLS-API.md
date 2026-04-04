@@ -484,30 +484,33 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    ```
    This creates a `skills-api/publish/` folder with everything needed to run on Linux — no .NET runtime required on the VM.
 
-2. **[VM]** Create a dedicated service account with SSH access and the deployment folder:
+2. **[VM]** Create a dedicated service account and deployment folder, then give your login user write access via group membership:
    ```bash
-   # You can name this anything, e.g. svc-skillsapi — keep it consistent in steps below
-   # We create it with a shell temporarily so we can SCP as this account
-   sudo useradd -m -s /bin/bash skills-api
-   sudo passwd skills-api
+   # Create the service account — no shell, no login
+   # You can name it anything, e.g. svc-skillsapi — keep it consistent below
+   sudo useradd -r -s /bin/false skills-api
+
+   # Create the deployment folder owned by the service account
    sudo mkdir -p /opt/skills-api
    sudo chown skills-api:skills-api /opt/skills-api
-   ```
-   > Running services under a dedicated account keeps them isolated from your personal user. SSH access is only needed during deploy — step 4 removes it after the files are in place.
 
-3. **[Windows]** SCP directly as the service account — no ownership juggling needed:
+   # Add your login user to the skills-api group and grant group write access
+   # This lets you SCP as your login user without needing sudo or chown after every deploy
+   sudo usermod -aG skills-api YOUR-LOGIN-USER
+   sudo chmod g+w /opt/skills-api
+
+   # Log out and back in for the group change to take effect
+   ```
+
+3. **[Windows]** SCP as your login user — group membership gives you write access to `/opt/skills-api`:
    ```powershell
-   # Replace VM-IP with your VM's IP
-   scp -r ./publish/* skills-api@VM-IP:/opt/skills-api/
+   # Replace YOUR-LOGIN-USER and VM-IP with yours
+   scp -r ./publish/* YOUR-LOGIN-USER@VM-IP:/opt/skills-api/
    ```
 
-4. **[VM]** Remove SSH access from the service account — it should never be used interactively:
+4. **[VM]** Make the binary executable and verify it starts:
    ```bash
-   sudo usermod -s /bin/false skills-api
    sudo chmod +x /opt/skills-api/skills-api
-   ```
-   Verify it starts:
-   ```bash
    sudo -u skills-api ASPNETCORE_URLS=http://+:5000 /opt/skills-api/skills-api
    ```
    You should see the registered endpoints in the output. Press `Ctrl+C` to stop.
@@ -555,17 +558,19 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    ```powershell
    # deploy.ps1 — run from the skills-api/ folder
    param(
-       [string]$User = "YOUR-LOGIN-USER",
-       [string]$VMip = "VM-IP"
+       [string]$User = "YOUR-LOGIN-USER",  # your SSH login user
+       [string]$VMip = "VM-IP"             # your VM's IP address
    )
 
    Write-Host "Publishing..."
    dotnet publish -c Release -r linux-x64 --self-contained -o ./publish
 
+   # SCP as your login user — group membership grants write access to /opt/skills-api
+   # No sudo chown needed after copy
    Write-Host "Copying to VM..."
    scp -r ./publish/* "${User}@${VMip}:/opt/skills-api/"
-   ssh "${User}@${VMip}" "sudo chown -R skills-api:skills-api /opt/skills-api"
 
+   # Restart the systemd service and show status to confirm it's running
    Write-Host "Restarting service..."
    ssh "${User}@${VMip}" "sudo systemctl restart skills-api && sudo systemctl status skills-api"
 
