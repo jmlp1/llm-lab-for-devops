@@ -42,12 +42,7 @@ By the end of this unit, you will:
    cd skills-api
    ```
 
-2. Add packages:
-   ```powershell
-   dotnet add package Microsoft.AspNetCore.RateLimiting
-   ```
-   > `System.Diagnostics` is a built-in namespace — no NuGet package needed.
-   > `Microsoft.AspNetCore.RateLimiting` provides the rate limiting middleware used in Day 4.
+2. No additional packages needed — both `System.Diagnostics` and `Microsoft.AspNetCore.RateLimiting` are built into .NET 8's ASP.NET Core SDK. No `dotnet add package` required.
 
 3. Design endpoints (read-only only):
    ```
