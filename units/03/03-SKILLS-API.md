@@ -87,67 +87,44 @@ By the end of this unit, you will:
 **Objectives:**
 - Implement all 4 endpoint categories
 - Add allowlist validation
-- Add audit logging middleware
+- Add audit logging
 
 **Tasks:**
-1. Create `AllowlistValidator.cs`:
-   ```csharp
-   public class AllowlistValidator
-   {
-       private readonly IConfiguration _config;
 
-       public bool IsServiceAllowed(string service) { }
-       public bool IsLogSourceAllowed(string source) { }
-       public bool ValidateTailLines(int lines) { }
-   }
+All files go in the `src/` folder you created on Day 1. Copy each file then read the comments to understand what it does.
+
+1. Create `src/AllowlistValidator.cs` — reads the allowlist from `appsettings.json` and validates incoming requests:
+   - `IsServiceAllowed(name)` — checks the service name against `allowlist:services`
+   - `IsLogSourceAllowed(source)` — matches the file path against `allowlist:logSources` patterns (supports `*` wildcards)
+   - `ValidateTailLines(lines)` — enforces the `allowlist:maxTailLines` limit
+
+2. Create `src/AuditLogger.cs` — appends one line per request to `audit.log`:
+   ```
+   [2026-03-27T10:30:25Z] caller=llm-client endpoint=/api/logs/tail parameters=[source=/var/log/blocked.log] success=false error=ALLOWLIST_VIOLATION
    ```
 
-2. Create `AuditLogger.cs`:
-   ```csharp
-   public class AuditLogger
-   {
-       public void LogOperation(string caller, string endpoint, 
-           Dictionary<string, string> parameters, bool success, string? error = null)
-       {
-           var entry = new
-           {
-               timestamp = DateTime.UtcNow,
-               caller = caller,
-               endpoint = endpoint,
-               parameters = parameters,
-               success = success,
-               error = error
-           };
-           // Write to audit.log
-       }
-   }
+3. Create `src/SystemSkills.cs` — maps two endpoints:
+   - `GET /api/system/info` — returns OS, machine name, CPU count, memory, .NET version
+   - `GET /api/system/disk` — returns name, type, total/free GB and used % for every ready drive
+
+4. Create `src/ServiceSkills.cs` — maps one endpoint:
+   - `GET /api/services/status?name=docker` — validates against allowlist, then runs `sc query` (Windows) or `systemctl is-active` (Linux) and returns the status
+
+5. Create `src/LogSkills.cs` — maps one endpoint:
+   - `GET /api/logs/tail?source=...&lines=50` — validates source against allowlist and enforces the max lines limit, then returns the last N lines of the file
+
+6. Replace `Program.cs` with the wired-up version that:
+   - Registers `AllowlistValidator` and `AuditLogger` as singletons
+   - Configures rate limiting (100 req/min)
+   - Adds middleware to default `X-Caller` to `"unknown"` when not provided
+   - Calls `MapSystemEndpoints`, `MapServiceEndpoints`, `MapLogEndpoints`
+
+   Verify it builds:
+   ```powershell
+   dotnet build
    ```
 
-3. Implement `SystemSkills.cs`:
-   - `/api/system/info` — CPU, memory, OS info
-   - `/api/system/disk` — disk usage per mount point
-
-4. Implement `ServiceSkills.cs`:
-   - `/api/services/status?name=docker` — check service status
-   - Validate service name against allowlist
-
-5. Implement `LogSkills.cs`:
-   - `/api/logs/tail?source=/var/log/app.log&lines=50`
-   - Validate source against allowlist
-   - Enforce max lines limit
-
-6. Add middleware for audit logging:
-   ```csharp
-   app.Use(async (context, next) =>
-   {
-       var auditLogger = context.RequestServices.GetRequiredService<AuditLogger>();
-       var caller = context.Request.Headers["X-Caller"].ToString() ?? "unknown";
-       auditLogger.LogOperation(caller, context.Request.Path, ...);
-       await next.Invoke();
-   });
-   ```
-
-**Deliverable:** All 4 endpoint categories working, validators enforcing rules, audit logging active
+**Deliverable:** `dotnet build` succeeds with 0 errors, all 4 endpoints registered
 
 ---
 
