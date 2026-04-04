@@ -486,19 +486,25 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
 
 2. **[VM]** Create a dedicated service account and the deployment folder — services should never run as your personal user:
    ```bash
+   # Create a system account with no shell and no home directory
+   # You can name it anything, e.g. svc-skillsapi — just keep it consistent below
    sudo useradd -r -s /bin/false skills-api
+
+   # Create the deployment folder and allow your SSH user to write to it temporarily
    sudo mkdir -p /opt/skills-api
-   sudo chown YOUR-LOGIN-USER:YOUR-LOGIN-USER /opt/skills-api
+   sudo chown $(whoami):$(whoami) /opt/skills-api
    ```
-   > Setting the folder owner to your login user temporarily so SCP can write to it. Step 4 locks it down to the service account after the files are in place.
+   > `$(whoami)` automatically uses your current SSH username — no manual substitution needed.
 
 3. **[Windows]** Copy the published output directly to `/opt/skills-api` on the VM:
    ```powershell
-   scp -r ./publish/* YOUR-LOGIN-USER@VM-IP:/opt/skills-api/
+   # Replace SSH-USER and VM-IP with your SSH username and VM IP
+   scp -r ./publish/* SSH-USER@VM-IP:/opt/skills-api/
    ```
 
-4. **[VM]** Lock down ownership and verify it starts before setting up the service:
+4. **[VM]** Hand ownership to the service account and verify it starts:
    ```bash
+   # Replace skills-api with your chosen service account name if you changed it
    sudo chown -R skills-api:skills-api /opt/skills-api
    sudo chmod +x /opt/skills-api/skills-api
    sudo -u skills-api ASPNETCORE_URLS=http://+:5000 /opt/skills-api/skills-api
