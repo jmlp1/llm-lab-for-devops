@@ -27,6 +27,15 @@
    dotnet --version
    # Expected: 8.x.x
    ```
+3. Add NuGet.org as package source — required for restoring packages and cross-platform publishing:
+   ```powershell
+   dotnet nuget add source https://api.nuget.org/v3/index.json -n nuget.org
+   ```
+   Verify:
+   ```powershell
+   dotnet nuget list source
+   # Expected: nuget.org [Enabled] https://api.nuget.org/v3/index.json
+   ```
 
 ---
 
