@@ -537,6 +537,51 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
 
 ---
 
+### Stretch Goal: Docker Hub Deploy (Option B)
+
+Once the basic deploy works, try the proper registry-based workflow used in real CI/CD pipelines.
+
+> Requires: Docker Desktop on Windows, a free [Docker Hub](https://hub.docker.com) account.
+
+1. **[Windows]** Create `Dockerfile` in the `skills-api/` folder:
+   ```dockerfile
+   FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+   WORKDIR /app
+   COPY . .
+   RUN dotnet publish -c Release -o out
+
+   FROM mcr.microsoft.com/dotnet/aspnet:8.0
+   WORKDIR /app
+   COPY --from=build /app/out .
+   EXPOSE 5000
+   CMD ["dotnet", "skills-api.dll"]
+   ```
+
+2. **[Windows]** Build and push the image to Docker Hub:
+   ```powershell
+   docker build -t YOUR-DOCKERHUB-USERNAME/skills-api:latest .
+   docker push YOUR-DOCKERHUB-USERNAME/skills-api:latest
+   ```
+
+3. **[VM]** Pull and run the image — no build step needed on the server:
+   ```bash
+   docker pull YOUR-DOCKERHUB-USERNAME/skills-api:latest
+   docker run -d -p 5000:5000 \
+     -v /var/log:/var/log:ro \
+     -e ASPNETCORE_URLS=http://+:5000 \
+     --name skills-api-docker \
+     YOUR-DOCKERHUB-USERNAME/skills-api:latest
+   ```
+
+4. **[Windows]** Test it the same way:
+   ```powershell
+   curl "http://VM-IP:5000/api/system/info"
+   ```
+
+> Notice the difference: with Option A the server runs a binary you compiled. With Option B the server runs a container image you built and shipped. The server never touches the source code either way — that's the point.
+
+---
+
 ## Deliverables Checklist
 
 - [ ] .NET Minimal API created
