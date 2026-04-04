@@ -44,15 +44,7 @@ By the end of this unit, you will:
 
 2. No additional packages needed — both `System.Diagnostics` and `Microsoft.AspNetCore.RateLimiting` are built into .NET 8's ASP.NET Core SDK. No `dotnet add package` required.
 
-3. Design endpoints (read-only only):
-   ```
-   GET  /api/system/info
-   GET  /api/system/disk
-   GET  /api/services/status?name=...
-   GET  /api/logs/tail?source=...&lines=100
-   ```
-
-4. Create configuration schema:
+3. Create configuration schema:
    ```json
    {
      "allowlist": {
@@ -68,7 +60,11 @@ By the end of this unit, you will:
    }
    ```
 
-5. Create folder structure:
+4. Create the folder structure — **folders only**, files get created as you work through each day:
+   ```powershell
+   mkdir src, config
+   ```
+   Expected layout:
    ```
    skills-api/
    ├── src/
@@ -81,13 +77,9 @@ By the end of this unit, you will:
    ├── config/
    │   └── allowlist.json
    └── Dockerfile
-   
-   Log paths to allowlist:
-   - /var/log/app/*.log (Linux)
-   - ./ai-lab/samples/*.log (Windows)
    ```
 
-**Deliverable:** Project structure, endpoints designed, allowlist schema created
+**Deliverable:** Project structure created, allowlist schema in `appsettings.json`
 
 ---
 
