@@ -478,11 +478,11 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
 
 **Tasks:**
 
-1. **[Windows]** Publish a self-contained Linux binary — no .NET runtime needed on the VM:
+1. **[Windows]** Publish a self-contained Linux binary — run from your `skills-api/` folder:
    ```powershell
    dotnet publish -c Release -r linux-x64 --self-contained -o ./publish
    ```
-   The `publish/` folder now contains everything needed to run on Linux.
+   This creates a `skills-api/publish/` folder with everything needed to run on Linux — no .NET runtime required on the VM.
 
 2. **[Windows]** Copy the published output to the VM — replace `user` and `VM-IP` with yours:
    ```powershell
