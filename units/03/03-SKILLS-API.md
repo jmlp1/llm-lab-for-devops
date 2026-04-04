@@ -68,14 +68,10 @@ By the end of this unit, you will:
    ```
    skills-api/
    ├── src/
-   │   ├── Program.cs
-   │   ├── AllowlistValidator.cs
-   │   ├── AuditLogger.cs
-   │   ├── SystemSkills.cs
-   │   ├── ServiceSkills.cs
-   │   └── LogSkills.cs
+   │   ├── files to be added in next steps
+   │ 
    ├── config/
-   │   └── allowlist.json
+   │   └── files to be added in next steps
    └── Dockerfile
    ```
 
