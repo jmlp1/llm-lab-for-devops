@@ -495,9 +495,9 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    sudo chown skills-api:skills-api /opt/skills-api
 
    # Add your login user to the skills-api group and grant group write access
-   # This lets you SCP as your login user without needing sudo or chown after every deploy
+   # -R applies to existing files too — without it SCP will fail with Permission denied
    sudo usermod -aG skills-api YOUR-LOGIN-USER
-   sudo chmod g+w /opt/skills-api
+   sudo chmod -R g+w /opt/skills-api
 
    # Log out and back in for the group change to take effect
    ```
