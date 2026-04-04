@@ -554,7 +554,16 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    ```
    The responses should show the **VM's** OS, disk, and service info — not your laptop's.
 
-7. **[Windows]** Create `deploy.ps1` so future deploys are one command — replace `YOUR-LOGIN-USER` and `VM-IP` with yours:
+7. **[VM]** Allow your login user to run systemctl commands without a password — required for `deploy.ps1` to stop/start the service over SSH non-interactively:
+   ```bash
+   sudo visudo -f /etc/sudoers.d/skills-api-deploy
+   ```
+   Add this line — replace `YOUR-LOGIN-USER` with your SSH username:
+   ```
+   YOUR-LOGIN-USER ALL=(ALL) NOPASSWD: /bin/systemctl stop skills-api, /bin/systemctl start skills-api, /bin/systemctl restart skills-api, /bin/systemctl status skills-api
+   ```
+
+8. **[Windows]** Create `deploy.ps1` so future deploys are one command — replace `YOUR-LOGIN-USER` and `VM-IP` with yours:
    ```powershell
    # deploy.ps1 — run from the skills-api/ folder
    param(
@@ -565,14 +574,18 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    Write-Host "Publishing..."
    dotnet publish -c Release -r linux-x64 --self-contained -o ./publish
 
+   # Stop the service before copying — binary can't be overwritten while running
+   # Requires passwordless sudo for systemctl (configured in step 7)
+   Write-Host "Stopping service..."
+   ssh "${User}@${VMip}" "sudo systemctl stop skills-api"
+
    # SCP as your login user — group membership grants write access to /opt/skills-api
-   # No sudo chown needed after copy
    Write-Host "Copying to VM..."
    scp -r ./publish/* "${User}@${VMip}:/opt/skills-api/"
 
-   # Restart the systemd service and show status to confirm it's running
-   Write-Host "Restarting service..."
-   ssh "${User}@${VMip}" "sudo systemctl restart skills-api && sudo systemctl status skills-api"
+   # Start and show status to confirm it's running
+   Write-Host "Starting service..."
+   ssh "${User}@${VMip}" "sudo systemctl start skills-api && sudo systemctl status skills-api"
 
    Write-Host "Done. Testing endpoint..."
    curl "http://${VMip}:5000/api/system/info"
