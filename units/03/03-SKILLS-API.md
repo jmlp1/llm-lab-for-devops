@@ -36,7 +36,7 @@ By the end of this unit, you will:
 - Plan allowlist and audit schema
 
 **Tasks:**
-1. Create project:
+1. Create new project — run from your `AI_Learning` folder:
    ```powershell
    dotnet new web -n skills-api
    cd skills-api

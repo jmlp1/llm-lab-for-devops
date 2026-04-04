@@ -9,9 +9,9 @@
 ## Learning Objectives
 
 By the end of this unit, you will:
-- [x] Install and configure Ollama on Windows 11
-- [x] Pull and run a local LLM model (`llama3.1:8b` or similar)
-- [x] Create reusable prompt templates for DevOps tasks
+- [ ] Install and configure Ollama on Windows 11
+- [ ] Pull and run a local LLM model (`llama3.1:8b` or similar)
+- [ ] Create reusable prompt templates for DevOps tasks
 - [ ] Generate baseline outputs: log summaries, incident timelines, troubleshooting checklists
 - [ ] Document your setup and processes
 
@@ -226,15 +226,15 @@ Write-Host "Saved to ./ai-lab/out/03-output.txt"
 
 ## Deliverables Checklist
 
-- [x] Ollama installed and verified
-- [x] Llama model pulled
-- [x] `./ai-lab/ai-lab.md` — setup and usage guide
-- [x] `./ai-lab/prompts/00-style.md` — style guide
-- [x] `./ai-lab/prompts/01-log-summary.md` — prompt template
-- [x] `./ai-lab/prompts/02-incident-timeline.md` — prompt template
-- [x] `./ai-lab/prompts/03-troubleshooting-checklist.md` — prompt template
-- [x] 3 sample outputs in `./ai-lab/out/` (one per prompt)
-- [x] Test results documentation
+- [ ] Ollama installed and verified
+- [ ] Llama model pulled
+- [ ] `./ai-lab/ai-lab.md` — setup and usage guide
+- [ ] `./ai-lab/prompts/00-style.md` — style guide
+- [ ] `./ai-lab/prompts/01-log-summary.md` — prompt template
+- [ ] `./ai-lab/prompts/02-incident-timeline.md` — prompt template
+- [ ] `./ai-lab/prompts/03-troubleshooting-checklist.md` — prompt template
+- [ ] 3 sample outputs in `./ai-lab/out/` (one per prompt)
+- [ ] Test results documentation
 
 ---
 
