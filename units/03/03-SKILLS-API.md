@@ -484,37 +484,44 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    ```
    This creates a `skills-api/publish/` folder with everything needed to run on Linux — no .NET runtime required on the VM.
 
-2. **[Windows]** Copy the published output to the VM — replace `user` and `VM-IP` with yours:
+2. **[Windows]** Copy the published output to the VM — replace `YOUR-USERNAME` and `VM-IP` with yours:
    ```powershell
-   scp -r ./publish/* user@VM-IP:~/skills-api/
+   scp -r ./publish/* YOUR-USERNAME@VM-IP:~/skills-api/
    ```
 
-3. **[VM]** SSH in, make the binary executable, and run it once to verify it starts:
+3. **[VM]** Create a dedicated service account — services should never run as your personal user:
    ```bash
-   chmod +x ~/skills-api/skills-api
-   cd ~/skills-api
-   ASPNETCORE_URLS=http://+:5000 ./skills-api
+   sudo useradd -r -s /bin/false skills-api
+   sudo mkdir -p /opt/skills-api
+   sudo cp ~/skills-api/* /opt/skills-api/
+   sudo chown -R skills-api:skills-api /opt/skills-api
+   sudo chmod +x /opt/skills-api/skills-api
+   ```
+
+4. **[VM]** Run it once to verify it starts before setting up the service:
+   ```bash
+   sudo -u skills-api ASPNETCORE_URLS=http://+:5000 /opt/skills-api/skills-api
    ```
    You should see the registered endpoints in the output. Press `Ctrl+C` to stop.
 
-   > By default ASP.NET binds to `localhost` only — the `ASPNETCORE_URLS=http://+:5000` prefix tells it to listen on all network interfaces so your Windows laptop can reach it. The systemd service in step 4 sets this automatically via the `Environment=` line.
+   > By default ASP.NET binds to `localhost` only — `ASPNETCORE_URLS=http://+:5000` tells it to listen on all interfaces. The systemd service sets this automatically via the `Environment=` line.
 
-4. **[VM]** Create a systemd service so it runs automatically and restarts on failure:
+5. **[VM]** Create a systemd service so it runs automatically and restarts on failure:
    ```bash
    sudo nano /etc/systemd/system/skills-api.service
    ```
-   Paste this — update `User` and `WorkingDirectory` to match your username:
+   Paste this as-is — no personalisation needed:
    ```ini
    [Unit]
    Description=Skills API
    After=network.target
 
    [Service]
-   WorkingDirectory=/home/user/skills-api
-   ExecStart=/home/user/skills-api/skills-api
+   WorkingDirectory=/opt/skills-api
+   ExecStart=/opt/skills-api/skills-api
    Restart=always
    RestartSec=5
-   User=user
+   User=skills-api
    Environment=ASPNETCORE_URLS=http://+:5000
 
    [Install]
@@ -528,7 +535,7 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    sudo systemctl status skills-api
    ```
 
-5. **[Windows]** Test the VM's API from your laptop:
+6. **[Windows]** Test the VM's API from your laptop:
    ```powershell
    curl "http://VM-IP:5000/api/system/info"
    curl "http://VM-IP:5000/api/system/disk"
@@ -536,11 +543,11 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    ```
    The responses should show the **VM's** OS, disk, and service info — not your laptop's.
 
-6. **[Windows]** Create `deploy.ps1` so future deploys are one command:
+7. **[Windows]** Create `deploy.ps1` so future deploys are one command — replace `YOUR-USERNAME` and `VM-IP` with yours:
    ```powershell
    # deploy.ps1 — run from the skills-api/ folder
    param(
-       [string]$User = "user",
+       [string]$User = "YOUR-USERNAME",
        [string]$VMip = "VM-IP"
    )
 
@@ -548,7 +555,8 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    dotnet publish -c Release -r linux-x64 --self-contained -o ./publish
 
    Write-Host "Copying to VM..."
-   scp -r ./publish/* "${User}@${VMip}:~/skills-api/"
+   scp -r ./publish/* "${User}@${VMip}:~/skills-api-stage/"
+   ssh "${User}@${VMip}" "sudo cp ~/skills-api-stage/* /opt/skills-api/ && sudo chown -R skills-api:skills-api /opt/skills-api"
 
    Write-Host "Restarting service..."
    ssh "${User}@${VMip}" "sudo systemctl restart skills-api && sudo systemctl status skills-api"
