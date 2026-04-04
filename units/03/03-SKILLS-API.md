@@ -442,59 +442,65 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
 
 ---
 
-### Day 5: Docker Deployment & Integration
+### Day 5: Publish & Deploy to VM
 **Objectives:**
-- Containerize the API
-- Deploy on your Linux VM
-- Test from your Windows laptop
+- Publish a self-contained Linux binary from Windows
+- Deploy and run it on the VM as a systemd service
+- Create a reusable deploy script
 
 > Each step is labelled **[Windows]** or **[VM]** so it's clear where to run it.
 
 **Tasks:**
 
-1. **[Windows]** Create `Dockerfile` in the `skills-api/` folder:
-   ```dockerfile
-   FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-   WORKDIR /app
-   COPY . .
-   RUN dotnet publish -c Release -o out
-
-   FROM mcr.microsoft.com/dotnet/aspnet:8.0
-   WORKDIR /app
-   COPY --from=build /app/out .
-   EXPOSE 5000
-   CMD ["dotnet", "skills-api.dll"]
-   ```
-
-2. **[Windows]** Push the code to GitHub so the VM can pull it:
+1. **[Windows]** Publish a self-contained Linux binary — no .NET runtime needed on the VM:
    ```powershell
-   git add skills-api/Dockerfile
-   git commit -m "Add Dockerfile"
-   git push
+   dotnet publish -c Release -r linux-x64 --self-contained -o ./publish
+   ```
+   The `publish/` folder now contains everything needed to run on Linux.
+
+2. **[Windows]** Copy the published output to the VM — replace `user` and `VM-IP` with yours:
+   ```powershell
+   scp -r ./publish/* user@VM-IP:~/skills-api/
    ```
 
-3. **[VM]** SSH into your VM, clone the repo and build the Docker image:
+3. **[VM]** SSH in, make the binary executable, and run it once to verify it starts:
    ```bash
-   git clone https://github.com/YOUR-USERNAME/AI_Learning.git
-   cd AI_Learning/skills-api
-   docker build -t skills-api:latest .
+   chmod +x ~/skills-api/skills-api
+   cd ~/skills-api
+   ./skills-api
+   ```
+   You should see the registered endpoints in the output. Press `Ctrl+C` to stop.
+
+4. **[VM]** Create a systemd service so it runs automatically and restarts on failure:
+   ```bash
+   sudo nano /etc/systemd/system/skills-api.service
+   ```
+   Paste this — update `User` and `WorkingDirectory` to match your username:
+   ```ini
+   [Unit]
+   Description=Skills API
+   After=network.target
+
+   [Service]
+   WorkingDirectory=/home/user/skills-api
+   ExecStart=/home/user/skills-api/skills-api
+   Restart=always
+   RestartSec=5
+   User=user
+   Environment=ASPNETCORE_URLS=http://+:5000
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+   Enable and start it:
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable skills-api
+   sudo systemctl start skills-api
+   sudo systemctl status skills-api
    ```
 
-4. **[VM]** Run the container, mounting `/var/log` so the API can read real Linux logs:
-   ```bash
-   docker run -d -p 5000:5000 \
-     -v /var/log:/var/log:ro \
-     -e ASPNETCORE_URLS=http://+:5000 \
-     --name skills-api \
-     skills-api:latest
-   ```
-   Verify it started:
-   ```bash
-   docker ps
-   docker logs skills-api
-   ```
-
-5. **[Windows]** Test the VM's API from your laptop — replace `VM-IP` with your VM's actual IP:
+5. **[Windows]** Test the VM's API from your laptop:
    ```powershell
    curl "http://VM-IP:5000/api/system/info"
    curl "http://VM-IP:5000/api/system/disk"
@@ -502,14 +508,32 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    ```
    The responses should show the **VM's** OS, disk, and service info — not your laptop's.
 
-6. **[Windows]** Update `appsettings.json` to point the test script at the VM:
-   ```json
-   "skillsApi": {
-     "baseUrl": "http://VM-IP:5000"
-   }
+6. **[Windows]** Create `deploy.ps1` so future deploys are one command:
+   ```powershell
+   # deploy.ps1 — run from the skills-api/ folder
+   param(
+       [string]$User = "user",
+       [string]$VMip = "VM-IP"
+   )
+
+   Write-Host "Publishing..."
+   dotnet publish -c Release -r linux-x64 --self-contained -o ./publish
+
+   Write-Host "Copying to VM..."
+   scp -r ./publish/* "${User}@${VMip}:~/skills-api/"
+
+   Write-Host "Restarting service..."
+   ssh "${User}@${VMip}" "sudo systemctl restart skills-api && sudo systemctl status skills-api"
+
+   Write-Host "Done. Testing endpoint..."
+   curl "http://${VMip}:5000/api/system/info"
+   ```
+   Run it:
+   ```powershell
+   .\deploy.ps1 -User youruser -VMip 1.2.3.4
    ```
 
-**Deliverable:** `docker ps` shows the container running on the VM, curl from Windows returns the VM's system info
+**Deliverable:** `systemctl status skills-api` shows active on the VM, curl from Windows returns the VM's system info
 
 ---
 
