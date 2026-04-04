@@ -488,6 +488,7 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    ```bash
    # Create the service account — no shell, no login
    # You can name it anything, e.g. svc-skillsapi — keep it consistent below
+   # useradd -r also creates a group with the same name automatically (skills-api:skills-api)
    sudo useradd -r -s /bin/false skills-api
 
    # Create the deployment folder owned by the service account
