@@ -342,15 +342,36 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    ServiceSkills.MapServiceEndpoints(app);
    LogSkills.MapLogEndpoints(app);
 
+   // Print all registered endpoints at startup so you can verify they loaded
+   app.Lifetime.ApplicationStarted.Register(() =>
+   {
+       var endpoints = app.Services.GetRequiredService<EndpointDataSource>().Endpoints;
+       var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
+       logger.LogInformation("Registered {Count} endpoints:", endpoints.Count);
+       foreach (var ep in endpoints)
+           logger.LogInformation("  {Endpoint}", ep.DisplayName);
+   });
+
    app.Run();
    ```
 
-   Verify it builds:
+   Build and run to verify all endpoints are registered:
    ```powershell
    dotnet build
+   dotnet run
    ```
 
-**Deliverable:** `dotnet build` succeeds with 0 errors, all 4 endpoints registered
+   You should see this in the console output:
+   ```
+   info: Startup[0] Registered 4 endpoints:
+   info: Startup[0]   HTTP: GET /api/system/info
+   info: Startup[0]   HTTP: GET /api/system/disk
+   info: Startup[0]   HTTP: GET /api/services/status
+   info: Startup[0]   HTTP: GET /api/logs/tail
+   ```
+   Press `Ctrl+C` to stop.
+
+**Deliverable:** `dotnet run` shows all 4 endpoints registered in the console
 
 ---
 
