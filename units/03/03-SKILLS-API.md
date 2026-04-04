@@ -555,12 +555,13 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    The responses should show the **VM's** OS, disk, and service info — not your laptop's.
 
 7. **[VM]** Allow your login user to run systemctl commands without a password — required for `deploy.ps1` to stop/start the service over SSH non-interactively:
+   > **Best practice:** Set up SSH key authentication (`ssh-keygen` + `ssh-copy-id`) to avoid password prompts on every `ssh`/`scp` call. For this lab environment a password is fine.
    ```bash
    sudo visudo -f /etc/sudoers.d/skills-api-deploy
    ```
    Add this line — replace `YOUR-LOGIN-USER` with your SSH username:
    ```
-   YOUR-LOGIN-USER ALL=(ALL) NOPASSWD: /bin/systemctl stop skills-api, /bin/systemctl start skills-api, /bin/systemctl restart skills-api, /bin/systemctl status skills-api
+   YOUR-LOGIN-USER ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop skills-api, /usr/bin/systemctl start skills-api, /usr/bin/systemctl restart skills-api, /usr/bin/systemctl status skills-api
    ```
 
 8. **[Windows]** Create `deploy.ps1` so future deploys are one command — replace `YOUR-LOGIN-USER` and `VM-IP` with yours:
