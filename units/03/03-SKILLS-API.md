@@ -488,13 +488,13 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    ```bash
    sudo useradd -r -s /bin/false skills-api
    sudo mkdir -p /opt/skills-api
-   sudo chown YOUR-USERNAME:YOUR-USERNAME /opt/skills-api
+   sudo chown YOUR-LOGIN-USER:YOUR-LOGIN-USER /opt/skills-api
    ```
    > Setting the folder owner to your login user temporarily so SCP can write to it. Step 4 locks it down to the service account after the files are in place.
 
 3. **[Windows]** Copy the published output directly to `/opt/skills-api` on the VM:
    ```powershell
-   scp -r ./publish/* YOUR-USERNAME@VM-IP:/opt/skills-api/
+   scp -r ./publish/* YOUR-LOGIN-USER@VM-IP:/opt/skills-api/
    ```
 
 4. **[VM]** Lock down ownership and verify it starts before setting up the service:
@@ -544,11 +544,11 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    ```
    The responses should show the **VM's** OS, disk, and service info — not your laptop's.
 
-7. **[Windows]** Create `deploy.ps1` so future deploys are one command — replace `YOUR-USERNAME` and `VM-IP` with yours:
+7. **[Windows]** Create `deploy.ps1` so future deploys are one command — replace `YOUR-LOGIN-USER` and `VM-IP` with yours:
    ```powershell
    # deploy.ps1 — run from the skills-api/ folder
    param(
-       [string]$User = "YOUR-USERNAME",
+       [string]$User = "YOUR-LOGIN-USER",
        [string]$VMip = "VM-IP"
    )
 
