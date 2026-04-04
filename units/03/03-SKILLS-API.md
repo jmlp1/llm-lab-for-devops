@@ -484,29 +484,30 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    ```
    This creates a `skills-api/publish/` folder with everything needed to run on Linux — no .NET runtime required on the VM.
 
-2. **[VM]** Create a dedicated service account and the deployment folder — services should never run as your personal user:
+2. **[VM]** Create a dedicated service account with SSH access and the deployment folder:
    ```bash
-   # Create a system account with no shell and no home directory
-   # You can name it anything, e.g. svc-skillsapi — just keep it consistent below
-   sudo useradd -r -s /bin/false skills-api
-
-   # Create the deployment folder and allow your SSH user to write to it temporarily
+   # You can name this anything, e.g. svc-skillsapi — keep it consistent in steps below
+   # We create it with a shell temporarily so we can SCP as this account
+   sudo useradd -m -s /bin/bash skills-api
+   sudo passwd skills-api
    sudo mkdir -p /opt/skills-api
-   sudo chown $(whoami):$(whoami) /opt/skills-api
+   sudo chown skills-api:skills-api /opt/skills-api
    ```
-   > `$(whoami)` automatically uses your current SSH username — no manual substitution needed.
+   > Running services under a dedicated account keeps them isolated from your personal user. SSH access is only needed during deploy — step 4 removes it after the files are in place.
 
-3. **[Windows]** Copy the published output directly to `/opt/skills-api` on the VM:
+3. **[Windows]** SCP directly as the service account — no ownership juggling needed:
    ```powershell
-   # Replace SSH-USER and VM-IP with your SSH username and VM IP
-   scp -r ./publish/* SSH-USER@VM-IP:/opt/skills-api/
+   # Replace VM-IP with your VM's IP
+   scp -r ./publish/* skills-api@VM-IP:/opt/skills-api/
    ```
 
-4. **[VM]** Hand ownership to the service account and verify it starts:
+4. **[VM]** Remove SSH access from the service account — it should never be used interactively:
    ```bash
-   # Replace skills-api with your chosen service account name if you changed it
-   sudo chown -R skills-api:skills-api /opt/skills-api
+   sudo usermod -s /bin/false skills-api
    sudo chmod +x /opt/skills-api/skills-api
+   ```
+   Verify it starts:
+   ```bash
    sudo -u skills-api ASPNETCORE_URLS=http://+:5000 /opt/skills-api/skills-api
    ```
    You should see the registered endpoints in the output. Press `Ctrl+C` to stop.
