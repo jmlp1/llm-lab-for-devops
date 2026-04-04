@@ -44,7 +44,7 @@ By the end of this unit, you will:
 
 2. No additional packages needed — both `System.Diagnostics` and `Microsoft.AspNetCore.RateLimiting` are built into .NET 8's ASP.NET Core SDK. No `dotnet add package` required.
 
-3. Create configuration schema:
+3. Add the allowlist and audit config to `appsettings.json` (already in your `skills-api` folder):
    ```json
    {
      "allowlist": {
@@ -91,33 +91,263 @@ By the end of this unit, you will:
 
 **Tasks:**
 
-All files go in the `src/` folder you created on Day 1. Copy each file then read the comments to understand what it does.
+All files go in the `src/` folder. Copy each file as-is, then read it to understand what it does before moving on.
 
-1. Create `src/AllowlistValidator.cs` — reads the allowlist from `appsettings.json` and validates incoming requests:
-   - `IsServiceAllowed(name)` — checks the service name against `allowlist:services`
-   - `IsLogSourceAllowed(source)` — matches the file path against `allowlist:logSources` patterns (supports `*` wildcards)
-   - `ValidateTailLines(lines)` — enforces the `allowlist:maxTailLines` limit
+1. Create `src/AllowlistValidator.cs` — reads the allowlist from `appsettings.json` and validates incoming requests. Notice how `MatchesPattern` handles the `*` wildcard so `/var/log/app/*.log` matches any `.log` file in that folder:
+   ```csharp
+   public class AllowlistValidator(IConfiguration config)
+   {
+       public bool IsServiceAllowed(string service)
+       {
+           var allowed = config.GetSection("allowlist:services").Get<string[]>() ?? [];
+           return allowed.Contains(service, StringComparer.OrdinalIgnoreCase);
+       }
 
-2. Create `src/AuditLogger.cs` — appends one line per request to `audit.log`:
+       public bool IsLogSourceAllowed(string source)
+       {
+           var patterns = config.GetSection("allowlist:logSources").Get<string[]>() ?? [];
+           return patterns.Any(p => MatchesPattern(source, p));
+       }
+
+       public bool ValidateTailLines(int lines)
+       {
+           var max = config.GetValue<int>("allowlist:maxTailLines", 1000);
+           return lines > 0 && lines <= max;
+       }
+
+       private static bool MatchesPattern(string path, string pattern)
+       {
+           path = path.Replace('\\', '/');
+           pattern = pattern.Replace('\\', '/');
+
+           if (!pattern.Contains('*'))
+               return string.Equals(path, pattern, StringComparison.OrdinalIgnoreCase);
+
+           var parts = pattern.Split('*');
+           return path.StartsWith(parts[0], StringComparison.OrdinalIgnoreCase)
+               && path.EndsWith(parts[1], StringComparison.OrdinalIgnoreCase);
+       }
+   }
    ```
-   [2026-03-27T10:30:25Z] caller=llm-client endpoint=/api/logs/tail parameters=[source=/var/log/blocked.log] success=false error=ALLOWLIST_VIOLATION
+
+2. Create `src/AuditLogger.cs` — appends one structured line per request to `audit.log`. The path comes from `appsettings.json` so you can change it without touching code:
+   ```csharp
+   public class AuditLogger(IConfiguration config)
+   {
+       private readonly string _logPath = config.GetValue<string>("audit:logPath", "./audit.log")!;
+       private readonly bool _enabled = config.GetValue<bool>("audit:enabled", true);
+
+       public void LogOperation(string caller, string endpoint, Dictionary<string, string> parameters, bool success, string? error = null)
+       {
+           if (!_enabled) return;
+
+           var paramStr = string.Join(", ", parameters.Select(p => $"{p.Key}={p.Value}"));
+           var line = $"[{DateTime.UtcNow:O}] caller={caller} endpoint={endpoint} parameters=[{paramStr}] success={success.ToString().ToLower()}";
+           if (error != null) line += $" error={error}";
+
+           File.AppendAllText(_logPath, line + Environment.NewLine);
+       }
+   }
    ```
 
-3. Create `src/SystemSkills.cs` — maps two endpoints:
-   - `GET /api/system/info` — returns OS, machine name, CPU count, memory, .NET version
-   - `GET /api/system/disk` — returns name, type, total/free GB and used % for every ready drive
+3. Create `src/SystemSkills.cs` — maps `/api/system/info` and `/api/system/disk`. Notice that every endpoint reads `X-Caller` from the request header and passes it to `AuditLogger` — that's how we know which caller made the request:
+   ```csharp
+   public static class SystemSkills
+   {
+       public static void MapSystemEndpoints(WebApplication app)
+       {
+           app.MapGet("/api/system/info", (AuditLogger audit, HttpContext ctx) =>
+           {
+               var caller = GetCaller(ctx);
+               var info = new
+               {
+                   os = Environment.OSVersion.ToString(),
+                   machine = Environment.MachineName,
+                   processors = Environment.ProcessorCount,
+                   memory = GetMemoryInfo(),
+                   dotnetVersion = Environment.Version.ToString()
+               };
+               audit.LogOperation(caller, "/api/system/info", [], true);
+               return Results.Ok(info);
+           }).RequireRateLimiting("default");
 
-4. Create `src/ServiceSkills.cs` — maps one endpoint:
-   - `GET /api/services/status?name=docker` — validates against allowlist, then runs `sc query` (Windows) or `systemctl is-active` (Linux) and returns the status
+           app.MapGet("/api/system/disk", (AuditLogger audit, HttpContext ctx) =>
+           {
+               var caller = GetCaller(ctx);
+               var drives = DriveInfo.GetDrives()
+                   .Where(d => d.IsReady)
+                   .Select(d => new
+                   {
+                       name = d.Name,
+                       type = d.DriveType.ToString(),
+                       totalGb = Math.Round(d.TotalSize / 1_073_741_824.0, 2),
+                       freeGb = Math.Round(d.AvailableFreeSpace / 1_073_741_824.0, 2),
+                       usedPercent = Math.Round((1.0 - (double)d.AvailableFreeSpace / d.TotalSize) * 100, 1)
+                   });
+               audit.LogOperation(caller, "/api/system/disk", [], true);
+               return Results.Ok(drives);
+           }).RequireRateLimiting("default");
+       }
 
-5. Create `src/LogSkills.cs` — maps one endpoint:
-   - `GET /api/logs/tail?source=...&lines=50` — validates source against allowlist and enforces the max lines limit, then returns the last N lines of the file
+       private static object GetMemoryInfo()
+       {
+           var info = GC.GetGCMemoryInfo();
+           return new
+           {
+               totalMb = Math.Round(info.TotalAvailableMemoryBytes / 1_048_576.0, 0),
+               heapMb = Math.Round(GC.GetTotalMemory(false) / 1_048_576.0, 2)
+           };
+       }
 
-6. Replace `Program.cs` with the wired-up version that:
-   - Registers `AllowlistValidator` and `AuditLogger` as singletons
-   - Configures rate limiting (100 req/min)
-   - Adds middleware to default `X-Caller` to `"unknown"` when not provided
-   - Calls `MapSystemEndpoints`, `MapServiceEndpoints`, `MapLogEndpoints`
+       internal static string GetCaller(HttpContext ctx) =>
+           ctx.Request.Headers["X-Caller"].ToString() is { Length: > 0 } c ? c : "unknown";
+   }
+   ```
+
+4. Create `src/ServiceSkills.cs` — maps `/api/services/status?name=`. Notice the allowlist check happens before the OS command runs — if the service isn't allowed, we never touch the system:
+   ```csharp
+   public static class ServiceSkills
+   {
+       public static void MapServiceEndpoints(WebApplication app)
+       {
+           app.MapGet("/api/services/status", (string name, AllowlistValidator allowlist, AuditLogger audit, HttpContext ctx) =>
+           {
+               var caller = SystemSkills.GetCaller(ctx);
+               var parameters = new Dictionary<string, string> { ["name"] = name };
+
+               if (!allowlist.IsServiceAllowed(name))
+               {
+                   audit.LogOperation(caller, "/api/services/status", parameters, false, "ALLOWLIST_VIOLATION");
+                   return Results.Json(new { error = "Service not in allowlist", code = "ALLOWLIST_VIOLATION", status = 403, timestamp = DateTime.UtcNow }, statusCode: 403);
+               }
+
+               var status = CheckServiceStatus(name);
+               audit.LogOperation(caller, "/api/services/status", parameters, true);
+               return Results.Ok(new { service = name, status, timestamp = DateTime.UtcNow });
+           }).RequireRateLimiting("default");
+       }
+
+       private static string CheckServiceStatus(string name)
+       {
+           try
+           {
+               var (cmd, args) = Environment.OSVersion.Platform == PlatformID.Unix
+                   ? ("systemctl", $"is-active {name}")
+                   : ("sc", $"query {name}");
+
+               using var process = new System.Diagnostics.Process
+               {
+                   StartInfo = new System.Diagnostics.ProcessStartInfo
+                   {
+                       FileName = cmd,
+                       Arguments = args,
+                       RedirectStandardOutput = true,
+                       UseShellExecute = false,
+                       CreateNoWindow = true
+                   }
+               };
+               process.Start();
+               var output = process.StandardOutput.ReadToEnd().Trim();
+               process.WaitForExit();
+
+               if (Environment.OSVersion.Platform == PlatformID.Unix)
+                   return process.ExitCode == 0 ? "active" : "inactive";
+
+               return output.Contains("RUNNING") ? "running"
+                   : output.Contains("STOPPED") ? "stopped"
+                   : "unknown";
+           }
+           catch
+           {
+               return "unknown";
+           }
+       }
+   }
+   ```
+
+5. Create `src/LogSkills.cs` — maps `/api/logs/tail?source=...&lines=50`. Notice there are three separate validation checks before touching the file — allowlist, line count, then file existence:
+   ```csharp
+   public static class LogSkills
+   {
+       public static void MapLogEndpoints(WebApplication app)
+       {
+           app.MapGet("/api/logs/tail", (string source, int lines, AllowlistValidator allowlist, AuditLogger audit, HttpContext ctx) =>
+           {
+               var caller = SystemSkills.GetCaller(ctx);
+               var parameters = new Dictionary<string, string> { ["source"] = source, ["lines"] = lines.ToString() };
+
+               if (!allowlist.IsLogSourceAllowed(source))
+               {
+                   audit.LogOperation(caller, "/api/logs/tail", parameters, false, "ALLOWLIST_VIOLATION");
+                   return Results.Json(new { error = "Log source not in allowlist", code = "ALLOWLIST_VIOLATION", status = 403, timestamp = DateTime.UtcNow }, statusCode: 403);
+               }
+
+               if (!allowlist.ValidateTailLines(lines))
+               {
+                   audit.LogOperation(caller, "/api/logs/tail", parameters, false, "INVALID_LINES");
+                   return Results.Json(new { error = "Line count must be between 1 and 1000", code = "INVALID_LINES", status = 400, timestamp = DateTime.UtcNow }, statusCode: 400);
+               }
+
+               if (!File.Exists(source))
+               {
+                   audit.LogOperation(caller, "/api/logs/tail", parameters, false, "FILE_NOT_FOUND");
+                   return Results.Json(new { error = "Log file not found", code = "FILE_NOT_FOUND", status = 404, timestamp = DateTime.UtcNow }, statusCode: 404);
+               }
+
+               var content = TailFile(source, lines);
+               audit.LogOperation(caller, "/api/logs/tail", parameters, true);
+               return Results.Ok(new { source, lines = content.Length, content });
+           }).RequireRateLimiting("default");
+       }
+
+       private static string[] TailFile(string path, int lines)
+       {
+           var all = File.ReadAllLines(path);
+           return all.Length <= lines ? all : all[^lines..];
+       }
+   }
+   ```
+
+6. Replace the entire content of `Program.cs` with this — it wires everything together: registers the two services, configures rate limiting, adds the `X-Caller` middleware, then maps all endpoints:
+   ```csharp
+   using Microsoft.AspNetCore.RateLimiting;
+   using System.Threading.RateLimiting;
+
+   var builder = WebApplication.CreateBuilder(args);
+
+   builder.Services.AddSingleton<AllowlistValidator>();
+   builder.Services.AddSingleton<AuditLogger>();
+
+   builder.Services.AddRateLimiter(options =>
+   {
+       options.AddFixedWindowLimiter("default", limiter =>
+       {
+           limiter.PermitLimit = 100;
+           limiter.Window = TimeSpan.FromMinutes(1);
+           limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+           limiter.QueueLimit = 0;
+       });
+       options.RejectionStatusCode = 429;
+   });
+
+   var app = builder.Build();
+
+   app.UseRateLimiter();
+
+   // Ensure X-Caller header is always set — individual endpoints use it for audit logging
+   app.Use(async (context, next) =>
+   {
+       if (!context.Request.Headers.ContainsKey("X-Caller"))
+           context.Request.Headers.Append("X-Caller", "unknown");
+       await next.Invoke();
+   });
+
+   SystemSkills.MapSystemEndpoints(app);
+   ServiceSkills.MapServiceEndpoints(app);
+   LogSkills.MapLogEndpoints(app);
+
+   app.Run();
+   ```
 
    Verify it builds:
    ```powershell
