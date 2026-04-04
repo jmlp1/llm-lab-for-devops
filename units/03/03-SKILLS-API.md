@@ -554,17 +554,7 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    ```
    The responses should show the **VM's** OS, disk, and service info — not your laptop's.
 
-7. **[VM]** Optional — allow passwordless sudo for systemctl so `deploy.ps1` doesn't prompt on every run:
-   ```bash
-   sudo visudo -f /etc/sudoers.d/skills-api-deploy
-   ```
-   Add this line — replace `YOUR-LOGIN-USER` with your SSH username:
-   ```
-   YOUR-LOGIN-USER ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop skills-api, /usr/bin/systemctl start skills-api, /usr/bin/systemctl restart skills-api, /usr/bin/systemctl status skills-api
-   ```
-   > **Better long-term:** Set up SSH key auth (`ssh-keygen` + `ssh-copy-id`) to eliminate all password prompts for both `ssh` and `scp`. For this lab, passwords are fine.
-
-8. **[Windows]** Create `deploy.ps1` so future deploys are one command — replace `YOUR-LOGIN-USER` and `VM-IP` with yours:
+7. **[Windows]** Create `deploy.ps1` so future deploys are one command — replace `YOUR-LOGIN-USER` and `VM-IP` with yours:
    ```powershell
    # deploy.ps1 — run from the skills-api/ folder
    param(
@@ -576,7 +566,6 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    dotnet publish -c Release -r linux-x64 --self-contained -o ./publish
 
    # Stop the service before copying — binary can't be overwritten while running
-   # Requires passwordless sudo for systemctl (configured in step 7)
    Write-Host "Stopping service..."
    ssh "${User}@${VMip}" "sudo systemctl stop skills-api"
 
