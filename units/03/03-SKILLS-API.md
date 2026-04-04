@@ -493,9 +493,11 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    ```bash
    chmod +x ~/skills-api/skills-api
    cd ~/skills-api
-   ./skills-api
+   ASPNETCORE_URLS=http://+:5000 ./skills-api
    ```
    You should see the registered endpoints in the output. Press `Ctrl+C` to stop.
+
+   > By default ASP.NET binds to `localhost` only — the `ASPNETCORE_URLS=http://+:5000` prefix tells it to listen on all network interfaces so your Windows laptop can reach it. The systemd service in step 4 sets this automatically via the `Environment=` line.
 
 4. **[VM]** Create a systemd service so it runs automatically and restarts on failure:
    ```bash
