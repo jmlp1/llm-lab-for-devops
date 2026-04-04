@@ -375,70 +375,96 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
 
 ---
 
-### Day 4: Error Handling, Testing & Documentation
+### Day 4: Testing & Documentation
 **Objectives:**
-- Add comprehensive error handling
-- Test all endpoints
-- Document API contracts
+- Test all endpoints including error cases
+- Document the API
+
+> Error handling and rate limiting are already built into the code from Days 2–3. Day 4 is about proving they work and documenting what you built.
 
 **Tasks:**
-1. Add error handling:
-   - 403 Forbidden (allowlist violation)
-   - 400 Bad Request (invalid parameters)
-   - 500 Internal Server Error
-   - Return structured error responses:
-   ```json
-   {
-     "error": "Service not in allowlist",
-     "code": "ALLOWLIST_VIOLATION",
-     "status": 403,
-     "timestamp": "2026-03-27T10:30:00Z"
-   }
-   ```
 
-2. Add rate limiting middleware in `Program.cs`:
-   ```csharp
-   builder.Services.AddRateLimiter(options =>
-   {
-       options.AddFixedWindowLimiter("default", limiter =>
-       {
-           limiter.PermitLimit = 100;
-           limiter.Window = TimeSpan.FromMinutes(1);
-           limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-           limiter.QueueLimit = 0;
-       });
-       options.RejectionStatusCode = 429;
-   });
-
-   // After app.Build():
-   app.UseRateLimiter();
-
-   // On each endpoint:
-   app.MapGet("/api/system/info", ...).RequireRateLimiting("default");
-   ```
-   > This enforces the 100 req/min limit from the Safety Checklist using the built-in ASP.NET Core rate limiter (no external library needed beyond the package added on Day 1).
-
-3. Create test script (`test-skills.ps1`):
+1. Start the API:
    ```powershell
-   # Test system/info
-   curl -X GET "http://localhost:5000/api/system/info"
-
-   # Test services/status
-   curl -X GET "http://localhost:5000/api/services/status?name=docker"
-
-   # Test logs/tail
-   curl -X GET "http://localhost:5000/api/logs/tail?source=/var/log/app.log&lines=50"
+   dotnet run
    ```
 
-4. Create `API.md` documentation:
-   - Endpoint specifications
-   - Request/response examples
-   - Error codes
-   - Rate limiting policy
+2. Create `test-skills.ps1` in the `skills-api/` folder and run it — it tests both happy path and error cases:
+   ```powershell
+   $base = "http://localhost:5230"
 
-5. Verify `audit.log` is being written correctly
+   Write-Host "`n--- System Info ---"
+   curl "$base/api/system/info"
 
-**Deliverable:** Test results, API documentation, audit log sample
+   Write-Host "`n--- Disk Usage ---"
+   curl "$base/api/system/disk"
+
+   Write-Host "`n--- Service: docker (allowed) ---"
+   curl "$base/api/services/status?name=docker"
+
+   Write-Host "`n--- Service: spooler (blocked - not in allowlist) ---"
+   curl "$base/api/services/status?name=spooler"
+
+   Write-Host "`n--- Logs: invalid line count (blocked) ---"
+   curl "$base/api/logs/tail?source=C:\logs\app.log&lines=9999"
+
+   Write-Host "`n--- audit.log ---"
+   Get-Content ./audit.log
+   ```
+   Run it:
+   ```powershell
+   .\test-skills.ps1
+   ```
+   Expected: two blocked requests with `ALLOWLIST_VIOLATION` and `INVALID_LINES`, visible in the audit log at the end.
+
+3. Create `API.md` in the `skills-api/` folder — fill in your actual responses from the test run above:
+   ````markdown
+   # Skills API
+
+   Base URL: `http://localhost:5230` (dev) / `http://VM-IP:5000` (VM)
+   Rate limit: 100 requests/min per endpoint
+   Auth: pass `X-Caller: your-app-name` header to identify the caller in audit logs
+
+   ## Endpoints
+
+   ### GET /api/system/info
+   Returns OS, machine name, CPU count, memory, and .NET version.
+
+   **Response:**
+   ```json
+   { "os": "...", "machine": "...", "processors": 8, ... }
+   ```
+
+   ### GET /api/system/disk
+   Returns disk usage for all ready drives.
+
+   **Response:**
+   ```json
+   [{ "name": "C:\\", "totalGb": 476.84, "freeGb": 120.5, "usedPercent": 74.7 }]
+   ```
+
+   ### GET /api/services/status?name=docker
+   Returns service status. Name must be in the allowlist.
+
+   **Allowed values:** docker, networking, storage
+   **Response:** `{ "service": "docker", "status": "running" }`
+   **Error (403):** `{ "code": "ALLOWLIST_VIOLATION" }`
+
+   ### GET /api/logs/tail?source=PATH&lines=N
+   Returns the last N lines of a log file. Source must match an allowlist pattern. Max lines: 1000.
+
+   **Error (403):** `{ "code": "ALLOWLIST_VIOLATION" }`
+   **Error (400):** `{ "code": "INVALID_LINES" }`
+   **Error (404):** `{ "code": "FILE_NOT_FOUND" }`
+
+   ## Audit Log
+   Every request is logged to `audit.log`:
+   ```
+   [2026-04-04T18:31:30Z] caller=unknown endpoint=/api/services/status parameters=[name=spooler] success=false error=ALLOWLIST_VIOLATION
+   ```
+   ````
+
+**Deliverable:** `test-skills.ps1` runs with expected blocked responses, `API.md` filled in with your actual output
 
 ---
 
