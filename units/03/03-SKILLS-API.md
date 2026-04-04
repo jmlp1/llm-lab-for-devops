@@ -484,22 +484,23 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    ```
    This creates a `skills-api/publish/` folder with everything needed to run on Linux — no .NET runtime required on the VM.
 
-2. **[Windows]** Copy the published output to the VM — replace `YOUR-USERNAME` and `VM-IP` with yours:
-   ```powershell
-   scp -r ./publish/* YOUR-USERNAME@VM-IP:~/skills-api/
-   ```
-
-3. **[VM]** Create a dedicated service account — services should never run as your personal user:
+2. **[VM]** Create a dedicated service account and the deployment folder — services should never run as your personal user:
    ```bash
    sudo useradd -r -s /bin/false skills-api
    sudo mkdir -p /opt/skills-api
-   sudo cp ~/skills-api/* /opt/skills-api/
-   sudo chown -R skills-api:skills-api /opt/skills-api
-   sudo chmod +x /opt/skills-api/skills-api
+   sudo chown YOUR-USERNAME:YOUR-USERNAME /opt/skills-api
+   ```
+   > Setting the folder owner to your login user temporarily so SCP can write to it. Step 4 locks it down to the service account after the files are in place.
+
+3. **[Windows]** Copy the published output directly to `/opt/skills-api` on the VM:
+   ```powershell
+   scp -r ./publish/* YOUR-USERNAME@VM-IP:/opt/skills-api/
    ```
 
-4. **[VM]** Run it once to verify it starts before setting up the service:
+4. **[VM]** Lock down ownership and verify it starts before setting up the service:
    ```bash
+   sudo chown -R skills-api:skills-api /opt/skills-api
+   sudo chmod +x /opt/skills-api/skills-api
    sudo -u skills-api ASPNETCORE_URLS=http://+:5000 /opt/skills-api/skills-api
    ```
    You should see the registered endpoints in the output. Press `Ctrl+C` to stop.
@@ -555,8 +556,8 @@ All files go in the `src/` folder. Copy each file as-is, then read it to underst
    dotnet publish -c Release -r linux-x64 --self-contained -o ./publish
 
    Write-Host "Copying to VM..."
-   scp -r ./publish/* "${User}@${VMip}:~/skills-api-stage/"
-   ssh "${User}@${VMip}" "sudo cp ~/skills-api-stage/* /opt/skills-api/ && sudo chown -R skills-api:skills-api /opt/skills-api"
+   scp -r ./publish/* "${User}@${VMip}:/opt/skills-api/"
+   ssh "${User}@${VMip}" "sudo chown -R skills-api:skills-api /opt/skills-api"
 
    Write-Host "Restarting service..."
    ssh "${User}@${VMip}" "sudo systemctl restart skills-api && sudo systemctl status skills-api"
